@@ -8,6 +8,11 @@ from openai import OpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 
+
+st.sidebar.info("Wersja: 1.1 - Eksperymentalna Diagnostyka Tokenów")
+
+# TODO: Dodać automatyczną migrację do Qdrant Cloud
+
 # --- 1. KONFIGURACJA I INICJALIZACJA ---
 load_dotenv()
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
