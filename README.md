@@ -27,5 +27,5 @@ System inteligentnego zarządzania archiwum zdjęć, który wykorzystuje multimo
 ## ⚙️ Instalacja i uruchomienie
 1. Sklonuj repozytorium:
    ```bash
-   git clone [https://github.com/TWOJA-NAZWA/Znajdywacz-zdjec.git](https://github.com/TWOJA-NAZWA/Znajdywacz-zdjec.git)
+   git clone [https://github.com/PawelBartosik-S/ai-vision-search-lab.git](https://github.com/PawelBartosik-S/ai-vision-search-lab.git)
 
