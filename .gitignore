@@ -1,5 +1,12 @@
+# Twoje foldery projektowe
 .env
 venv/
 __pycache__/
 qdrant_data/
 uploaded_images/
+
+# Standardowe śmieci Pythona
+*.py[cod]
+*$py.class
+.venv
+.envrc

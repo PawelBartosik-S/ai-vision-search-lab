@@ -1,6 +1,7 @@
+
 # 📸 Znajdywacz Zdjęć 2026 (AI Image Search Lab)
 
-### Projekt na zaliczenie przedostatniego modułu kursu Data Science
+### Projekt do przedostatniego modułu kursu Data Science
 
 System inteligentnego zarządzania archiwum zdjęć, który wykorzystuje multimodalne modele Large Language Models (LLM) do automatycznego opisywania obrazów oraz bazę wektorową do błyskawicznego wyszukiwania semantycznego.
 
@@ -27,3 +28,4 @@ System inteligentnego zarządzania archiwum zdjęć, który wykorzystuje multimo
 1. Sklonuj repozytorium:
    ```bash
    git clone [https://github.com/TWOJA-NAZWA/Znajdywacz-zdjec.git](https://github.com/TWOJA-NAZWA/Znajdywacz-zdjec.git)
+
