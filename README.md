@@ -29,3 +29,20 @@ System inteligentnego zarządzania archiwum zdjęć, który wykorzystuje multimo
    ```bash
    git clone [https://github.com/PawelBartosik-S/ai-vision-search-lab.git](https://github.com/PawelBartosik-S/ai-vision-search-lab.git)
 
+2. Zainstaluj biblioteki:
+
+pip install -r requirements.txt
+3. Skonfiguruj plik .env dodając swój OPENAI_API_KEY.
+
+4. Uruchom aplikację:
+
+streamlit run app.py
+
+👨‍🔬 Cele edukacyjne (Product Owner Perspective)
+Celem projektu było nie tylko dostarczenie kodu, ale przejście przez pełny cykl życia produktu:
+
+Zarządzanie Backlogiem w Trello.
+
+Implementacja z zachowaniem GitFlow (praca na branchach, Pull Requests).
+
+Benchmarking modeli pod kątem jakości opisów i zużycia tokenów.
