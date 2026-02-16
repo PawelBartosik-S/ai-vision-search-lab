@@ -18,10 +18,21 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @st.cache_resource
 def get_qdrant_client():
-    client = QdrantClient(path="./qdrant_data")
-    try:
-        client.get_collection(COLLECTION_NAME)
-    except Exception:
+    # --- POPRAWKA: LOGIKA HYBRYDOWA (CLOUD / LOCAL) ---
+    q_host = os.getenv("QDRANT_HOST")
+    q_api_key = os.getenv("QDRANT_API_KEY")
+
+    if q_host and q_api_key:
+        # Łączymy z Qdrant Cloud
+        client = QdrantClient(url=q_host, api_key=q_api_key)
+        st.sidebar.success("☁️ Połączono z Qdrant Cloud")
+    else:
+        # Tryb awaryjny: lokalny
+        client = QdrantClient(path="./qdrant_data")
+        st.sidebar.warning("🏠 Tryb lokalny (Brak kluczy Cloud)")
+
+    # Automatyczne tworzenie kolekcji jeśli nie istnieje
+    if not client.collection_exists(COLLECTION_NAME):
         client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
@@ -38,7 +49,10 @@ def encode_image(image_path):
 
 def generate_image_description(image_path, model_name):
     base64_image = encode_image(image_path)
-    prompt = "Opisz krótko i konkretnie to zdjęcie po polsku. Skup się na faktach."
+    # BAJER: Bardziej szczegółowy prompt dla lepszej jakości wyszukiwania
+    prompt = """Jesteś ekspertem analizy obrazu. Opisz to zdjęcie po polsku, 
+    uwzględniając: 1. Główny temat, 2. Kolorystykę, 3. Kontekst/Emocje, 4. Detale tła. 
+    Bądź konkretny, ale obrazowy."""
 
     try:
         messages = [{
@@ -48,48 +62,34 @@ def generate_image_description(image_path, model_name):
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
             ],
         }]
-        # Przygotowanie parametrów zapytania
-        params = {
-            "model": model_name, 
-            "messages": messages,
-        }
         
-        # Logika specyficzna dla generacji modeli
+        params = {"model": model_name, "messages": messages}
+        
+        # Specyficzne ustawienia dla modeli 2026 (GPT-5 family)
         if "gpt-5" in model_name:
-            # Modele GPT-5 nie wspierają temperatury innej niż 1
-            params["max_completion_tokens"] = 600
+            params["max_completion_tokens"] = 500
         else:
-            # Modele GPT-4o i starsze wspierają temperaturę i max_tokens
             params["temperature"] = 0.7
-            params["max_tokens"] = 600
-        
-        # Zmniejszamy limit - czasem modele 5-mini przy dużym limicie 'wiszą'
-        if "gpt-5" in model_name:
-            params["max_completion_tokens"] = 400 
-        else:
-            params["max_tokens"] = 400
+            params["max_tokens"] = 500
 
         response = openai_client.chat.completions.create(**params)
         
         usage = response.usage
         reasoning = getattr(usage, 'reasoning_tokens', 0)
         content = response.choices[0].message.content
-        finish_reason = response.choices[0].finish_reason # Sprawdzamy dlaczego skończył
         
-        stats = f"\n\n[Statystyki | Wyjściowe: {usage.completion_tokens} | Myślenie: {reasoning} | Powód końca: {finish_reason}]"
+        # BAJER: Separator statystyk dla czystości embeddingu
+        stats_separator = "---STATS---"
+        stats = f"{stats_separator}\n📊 Model: {model_name} | 🧠 Myślenie: {reasoning} | ⚡ Tokeny: {usage.total_tokens}"
         
-        if content and len(content.strip()) > 0:
-            return content + stats
-        
-        # Jeśli content jest pusty, ale tokeny poleciały:
-        return f"Model 'przemielił' {usage.completion_tokens} tokenów, ale odmówił wypisania tekstu (Powód: {finish_reason})." + stats
+        return content + "\n\n" + stats
 
     except Exception as e:
-        return f"Błąd krytyczny modelu {model_name}: {str(e)}"
+        return f"Błąd modelu {model_name}: {str(e)}"
 
 def get_text_embedding(text):
-    # Czyścimy tekst ze statystyk przed tworzeniem embeddingu (szukamy tylko po sensie opisu)
-    clean_text = text.split("[Statystyki:")[0]
+    # Czyścimy tekst ze statystyk, by embedding był czysty (tylko sens zdjęcia)
+    clean_text = text.split("---STATS---")[0]
     response = openai_client.embeddings.create(
         input=clean_text,
         model="text-embedding-3-small"
@@ -104,13 +104,15 @@ def save_to_vector_db(image_path, description, model_used):
         payload={
             "path": image_path, 
             "description": description,
-            "model": model_used
+            "model": model_used,
+            "timestamp": time.time()
         }
     )
     qdrant_client.upsert(collection_name=COLLECTION_NAME, points=[point])
 
 def search_images(query_text, limit=4):
     query_vector = get_text_embedding(query_text)
+    # Zmieniono na query_points dla nowszych wersji biblioteki
     response = qdrant_client.query_points(
         collection_name=COLLECTION_NAME,
         query=query_vector,
@@ -118,94 +120,106 @@ def search_images(query_text, limit=4):
     )
     return response.points
 
-def reset_database():
-    try:
-        qdrant_client.delete_collection(COLLECTION_NAME)
-    except:
-        pass
-    qdrant_client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-    )
-
 # --- 3. INTERFEJS STREAMLIT ---
 
 st.set_page_config(page_title="AI Vision Lab 2026", layout="wide", page_icon="🔬")
 
+# Custom CSS dla bajeranckiego wyglądu
+st.markdown("""
+    <style>
+    .stApp { background-color: #0e1117; color: #ffffff; }
+    .stTextArea textarea { background-color: #1e2130; color: #00ffcc; font-family: 'Courier New', monospace; }
+    </style>
+    """, unsafe_allow_html=True)
+
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-st.title("🔬 AI Vision Lab: Foto-Wyszukiwarka")
+st.title("🔬 AI Vision Lab: Multimodal Search")
 
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        st.subheader("Logowanie do laboratorium")
-        login_input = st.text_input("Użytkownik")
-        if st.button("Wejdź", width="stretch"):
+        st.subheader("Autoryzacja Badacza")
+        login_input = st.text_input("Podaj identyfikator")
+        if st.button("Uruchom System", use_container_width=True):
             if login_input:
                 st.session_state.username = login_input
                 st.session_state.logged_in = True
                 st.rerun()
 else:
-    tab1, tab2, tab3 = st.tabs(["📤 Analiza Zdjęć", "🔍 Wyszukiwarka", "⚙️ Zarządzanie"])
+    tab1, tab2, tab3 = st.tabs(["📤 Laboratorium Analizy", "🔍 Eksplorator Wektorowy", "⚙️ Konsola Systemowa"])
 
     with tab1:
-        st.info("Wybierz model i wrzuć zdjęcie, aby zobaczyć jak AI je 'rozpracowuje'.")
-        selected_model = st.selectbox(
-            "Model do testów:", 
-            ["gpt-4o-mini", "gpt-4o", "gpt-5-mini", "gpt-5", "gpt-5.1", "gpt-5.2"]
-        )
-        uploaded_files = st.file_uploader("Dodaj pliki", accept_multiple_files=True)
+        st.markdown("### 📷 Nowy Eksperyment Wizualny")
+        col_m1, col_m2 = st.columns([1, 2])
+        with col_m1:
+            selected_model = st.radio(
+                "Wybierz silnik AI:", 
+                ["gpt-4o-mini", "gpt-4o", "gpt-5-mini", "gpt-5", "gpt-5.2"]
+            )
+        with col_m2:
+            uploaded_files = st.file_uploader("Wrzuć zdjęcia do analizy", accept_multiple_files=True)
         
-        if uploaded_files and st.button("Rozpocznij eksperyment", width="stretch"):
+        if uploaded_files and st.button("⚡ ROZPOCZNIJ PROCESOWANIE", use_container_width=True):
+            progress_bar = st.progress(0)
             for idx, uploaded_file in enumerate(uploaded_files):
                 path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
                 with open(path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
                 
-                with st.spinner(f'Analizuję przez {selected_model}...'):
+                with st.status(f"Analizuję {uploaded_file.name}...", expanded=True) as status:
                     desc = generate_image_description(path, selected_model)
-                    
-                    st.success(f"Analiza zakończona dla: {uploaded_file.name}")
-                    
-                    # DODAJEMY UNIKALNY KLUCZ (key) używając indeksu i nazwy pliku
-                    st.text_area(
-                        label=f"Wynik dla {uploaded_file.name}:", 
-                        value=desc, 
-                        height=150, 
-                        key=f"text_area_{idx}_{uploaded_file.name}"
-                    )
-                    
                     save_to_vector_db(path, desc, selected_model)
-            st.toast("Zdjęcia zindeksowane!")
+                    st.image(path, width=200)
+                    st.write(desc)
+                    status.update(label=f"Zakończono: {uploaded_file.name}", state="complete")
+                
+                progress_bar.progress((idx + 1) / len(uploaded_files))
+            st.balloons()
 
     with tab2:
-        query = st.text_input("Opisz zdjęcie, by je znaleźć:")
+        st.markdown("### 🔍 Wyszukiwanie Semantyczne")
+        query = st.text_input("Wpisz czego szukasz (np. 'zachód słońca nad morzem' lub 'zdjęcie z dużą ilością zieleni')")
+        
         if query:
             results = search_images(query)
             if results:
-                cols = st.columns(2)
+                # Bajer: dynamiczny układ siatki
+                grid = st.columns(2)
                 for idx, hit in enumerate(results):
-                    with cols[idx % 2]:
-                        st.image(hit.payload["path"], width="stretch")
-                        with st.expander("🔍 Metadane i Statystyki AI"):
-                            st.write(f"**Użyty model:** `{hit.payload.get('model', 'N/A')}`")
-                            st.write(f"**Score:** `{hit.score:.4f}`")
-                            st.write(f"**Opis i Tokeny:**")
-                            st.caption(hit.payload.get('description', 'Brak opisu'))
+                    with grid[idx % 2]:
+                        # Kontener na każde zdjęcie dla estetyki
+                        with st.container(border=True):
+                            st.image(hit.payload["path"], use_container_width=True)
+                            # Rozdzielamy opis od statystyk do wyświetlenia
+                            full_desc = hit.payload.get('description', '')
+                            clean_desc = full_desc.split("---STATS---")[0]
+                            stats_desc = full_desc.split("---STATS---")[-1] if "---STATS---" in full_desc else ""
+                            
+                            st.markdown(f"**Opis:** {clean_desc}")
+                            with st.expander("🔬 Dane techniczne"):
+                                st.caption(f"Prawdopodobieństwo (Score): {hit.score:.4f}")
+                                st.caption(stats_desc)
             else:
-                st.warning("Brak wyników w bazie.")
+                st.warning("Baza milczy. Brak pasujących wektorów.")
 
     with tab3:
-        st.subheader("Ustawienia systemowe")
-        if st.button("🔥 CAŁKOWITY RESET BAZY", width="stretch"):
-            reset_database()
-            st.success("Baza wyczyszczona. Wszystkie eksperymenty usunięte.")
-            st.rerun()
+        st.subheader("Zarządzanie bazą")
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            if st.button("🧹 Czyść lokalny folder zdjęć"):
+                for f in os.listdir(UPLOAD_FOLDER):
+                    os.remove(os.path.join(UPLOAD_FOLDER, f))
+                st.success("Folder wyczyszczony.")
+        with col_c2:
+            if st.button("🔥 RESETUJ KOLEKCJĘ QDRANT"):
+                qdrant_client.delete_collection(COLLECTION_NAME)
+                st.rerun()
 
     with st.sidebar:
-        st.write(f"Badacz: **{st.session_state.username}**")
-        if st.button("Wyloguj"):
+        st.markdown(f"---")
+        st.markdown(f"Zalogowany: **{st.session_state.username}**")
+        if st.button("Wyloguj system"):
             st.session_state.logged_in = False
             st.rerun()
