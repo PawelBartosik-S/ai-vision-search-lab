@@ -21,29 +21,32 @@ def get_qdrant_client():
     q_host = os.getenv("QDRANT_HOST")
     q_api_key = os.getenv("QDRANT_API_KEY")
 
+    client = None # Inicjalizacja zmiennej
+
     if q_host and q_api_key:
         try:
             # Próba połączenia z chmurą
             client = QdrantClient(url=q_host, api_key=q_api_key, timeout=10)
-            client.get_collections() # Testowy strzał do bazy
+            client.get_collections() # Test połączenia
             st.sidebar.success("☁️ Połączono z Qdrant Cloud")
-            return client
         except Exception as e:
             st.sidebar.error(f"❌ Chmura nie odpowiada: {str(e)}")
-            # Jeśli chmura padnie, fallback do lokala:
-            return QdrantClient(path="./qdrant_data")
+            client = QdrantClient(path="./qdrant_data")
     else:
         st.sidebar.warning("🏠 Tryb lokalny (Brak danych w .env)")
-        return QdrantClient(path="./qdrant_data")
+        client = QdrantClient(path="./qdrant_data")
 
-    # Automatyczne tworzenie kolekcji jeśli nie istnieje
-    if not client.collection_exists(COLLECTION_NAME):
-        client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-        )
-    return client
+    # --- KLUCZOWA POPRAWKA: Tworzenie kolekcji musi być TUTAJ ---
+    try:
+        if not client.collection_exists(COLLECTION_NAME):
+            client.create_collection(
+                collection_name=COLLECTION_NAME,
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+            )
+    except Exception as e:
+        st.error(f"Błąd podczas tworzenia kolekcji: {e}")
 
+    return client # Jedyny return na końcu funkcji
 qdrant_client = get_qdrant_client()
 
 # --- 2. FUNKCJE BACKENDOWE (LOGIKA AI) ---
