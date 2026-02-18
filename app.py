@@ -18,18 +18,23 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @st.cache_resource
 def get_qdrant_client():
-    # --- POPRAWKA: LOGIKA HYBRYDOWA (CLOUD / LOCAL) ---
     q_host = os.getenv("QDRANT_HOST")
     q_api_key = os.getenv("QDRANT_API_KEY")
 
     if q_host and q_api_key:
-        # Łączymy z Qdrant Cloud
-        client = QdrantClient(url=q_host, api_key=q_api_key)
-        st.sidebar.success("☁️ Połączono z Qdrant Cloud")
+        try:
+            # Próba połączenia z chmurą
+            client = QdrantClient(url=q_host, api_key=q_api_key, timeout=10)
+            client.get_collections() # Testowy strzał do bazy
+            st.sidebar.success("☁️ Połączono z Qdrant Cloud")
+            return client
+        except Exception as e:
+            st.sidebar.error(f"❌ Chmura nie odpowiada: {str(e)}")
+            # Jeśli chmura padnie, fallback do lokala:
+            return QdrantClient(path="./qdrant_data")
     else:
-        # Tryb awaryjny: lokalny
-        client = QdrantClient(path="./qdrant_data")
-        st.sidebar.warning("🏠 Tryb lokalny (Brak kluczy Cloud)")
+        st.sidebar.warning("🏠 Tryb lokalny (Brak danych w .env)")
+        return QdrantClient(path="./qdrant_data")
 
     # Automatyczne tworzenie kolekcji jeśli nie istnieje
     if not client.collection_exists(COLLECTION_NAME):
@@ -142,7 +147,7 @@ if not st.session_state.logged_in:
     with col2:
         st.subheader("Autoryzacja Badacza")
         login_input = st.text_input("Podaj identyfikator")
-        if st.button("Uruchom System", use_container_width=True):
+        if st.button("Uruchom System", width="stretch"):
             if login_input:
                 st.session_state.username = login_input
                 st.session_state.logged_in = True
@@ -161,7 +166,7 @@ else:
         with col_m2:
             uploaded_files = st.file_uploader("Wrzuć zdjęcia do analizy", accept_multiple_files=True)
         
-        if uploaded_files and st.button("⚡ ROZPOCZNIJ PROCESOWANIE", use_container_width=True):
+        if uploaded_files and st.button("⚡ ROZPOCZNIJ PROCESOWANIE", width="stretch"):
             progress_bar = st.progress(0)
             for idx, uploaded_file in enumerate(uploaded_files):
                 path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
@@ -191,7 +196,7 @@ else:
                     with grid[idx % 2]:
                         # Kontener na każde zdjęcie dla estetyki
                         with st.container(border=True):
-                            st.image(hit.payload["path"], use_container_width=True)
+                            st.image(hit.payload["path"], width="stretch")
                             # Rozdzielamy opis od statystyk do wyświetlenia
                             full_desc = hit.payload.get('description', '')
                             clean_desc = full_desc.split("---STATS---")[0]
