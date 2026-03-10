@@ -13,337 +13,503 @@ from google import genai
 from google.genai import types
 from datetime import datetime
 
-# --- KONFIGURACJA BEZPIECZEŃSTWA ---
-ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
+# --- 1. SŁOWNIK JĘZYKOWY ---
+LANGUAGES = {
+    "PL": {
+        "title": "👁️ Sokole Oko AI: Magiczny Detektyw Wizualny",
+        "auth_header": "🔐 Autoryzacja",
+        "pwd_label": "Hasło administratora",
+        "login_btn": "Zaloguj",
+        "logout_btn": "Wyloguj",
+        "auth_success": "✅ Zalogowano!",
+        "auth_error": "❌ Błędne hasło!",
+        "admin_active": "Tryb Administratora aktywny",
+        "qdrant_cloud": "☁️ Połączono z Qdrant Cloud",
+        "qdrant_error": "❌ Chmura nie odpowiada: ",
+        "qdrant_local": "🏠 Tryb lokalny (Baza na dysku)",
+        "tab1": "📤 Laboratorium Analizy",
+        "tab2": "🔍 Eksplorator Wektorowy",
+        "tab3": "⚙️ Konsola Systemowa",
+        "toggle_free": "🆓 Używaj darmowego modelu (Google Gemini)",
+        "radio_model": "Wybierz model OpenAI:",
+        "uploader": "Wrzuć zdjęcia",
+        "btn_process": "⚡ ROZPOCZNIJ PROCESOWANIE",
+        "status_analyzing": "Analizuję {}...",
+        "status_done": "Zakończono: {}",
+        "status_error": "Przerwano procesowanie",
+        "search_label": "Wpisz czego szukasz:",
+        "auto_translate": "🌐 Przetłumacz wyniki na bieżący język",
+        "dead_link": "⚠️ Zdjęcie zostało przeniesione lub usunięte.",
+        "btn_clean_dead": "🧹 Usuń martwy wpis",
+        "tech_data": "🔬 Dane techniczne",
+        "date_label": "🗓️ Data",
+        "score_label": "🎯 Score",
+        "btn_del_meta": "🗑️ Usuń tylko opis",
+        "btn_archive": "📦 Archiwizuj foto i usuń wpis",
+        "login_info": "Zaloguj się, aby zarządzać wpisem.",
+        "mass_header": "📦 Masowe Przetwarzanie",
+        "mass_info": "Skanuje folder `uploaded_images` pod kątem nowych plików.",
+        "scan_btn": "🔎 Skanuj i Indeksuj Nowe Zdjęcia",
+        "no_new": "Brak nowych zdjęć do dodania.",
+        "danger_zone": "⚠️ Strefa Niebezpieczna",
+        "confirm_check": "Potwierdzam chęć zarządzania kolekcją",
+        "btn_clean_folder": "🧹 Czyść folder zdjęć",
+        "btn_reset_qdrant": "🔥 RESETUJ KOLEKCJĘ QDRANT",
+        "desc_label": "**Opis:** ",
+        "success_clean": "Wyczyszczono!",
+        "error_generic": "Wystąpił błąd: ",
+    },
+    "EN": {
+        "title": "🔬 AI Vision Lab: Multimodal Search",
+        "auth_header": "🔐 Authorization",
+        "pwd_label": "Admin password",
+        "login_btn": "Log In",
+        "logout_btn": "Log Out",
+        "auth_success": "✅ Logged in!",
+        "auth_error": "❌ Incorrect password!",
+        "admin_active": "Admin Mode active",
+        "qdrant_cloud": "☁️ Connected to Qdrant Cloud",
+        "qdrant_error": "❌ Cloud not responding: ",
+        "qdrant_local": "🏠 Local Mode (Disk database)",
+        "tab1": "📤 Analysis Lab",
+        "tab2": "🔍 Vector Explorer",
+        "tab3": "⚙️ System Console",
+        "toggle_free": "🆓 Use free model (Google Gemini)",
+        "radio_model": "Select OpenAI model:",
+        "uploader": "Upload images",
+        "btn_process": "⚡ START PROCESSING",
+        "status_analyzing": "Analyzing {}...",
+        "status_done": "Done: {}",
+        "status_error": "Processing interrupted",
+        "search_label": "Type what you're looking for:",
+        "auto_translate": "🌐 Translate results to current language",
+        "dead_link": "⚠️ Image file moved or deleted.",
+        "btn_clean_dead": "🧹 Remove dead entry",
+        "tech_data": "🔬 Technical Data",
+        "date_label": "🗓️ Date",
+        "score_label": "🎯 Score",
+        "btn_del_meta": "🗑️ Delete only description",
+        "btn_archive": "📦 Archive photo and delete record",
+        "login_info": "Please log in to manage this entry.",
+        "mass_header": "📦 Mass Processing",
+        "mass_info": "Scanning `uploaded_images` folder for new files.",
+        "scan_btn": "🔎 Scan and Index New Images",
+        "no_new": "No new images found.",
+        "danger_zone": "⚠️ Danger Zone",
+        "confirm_check": "I confirm I want to manage the collection",
+        "btn_clean_folder": "🧹 Clean image folder",
+        "btn_reset_qdrant": "🔥 RESET QDRANT COLLECTION",
+        "desc_label": "**Description:** ",
+        "success_clean": "Cleaned up!",
+        "error_generic": "An error occurred: ",
+    },
+}
+
+# --- 2. KONFIGURACJA I INICJALIZACJA ---
+load_dotenv()
+st.set_page_config(page_title="AI Vision Lab 2026", layout="wide", page_icon="🔬")
 
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 
+# Sidebar Language Selection
 with st.sidebar:
-    st.header("🔐 Autoryzacja")
+    lang_code = st.selectbox("🌐 Language", ["PL", "EN"])
+    t = LANGUAGES[lang_code]
+
+    st.divider()
+
+    # Auth Section
+    ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "admin123")
+    st.header(t["auth_header"])
     if not st.session_state["authenticated"]:
-        pwd_input = st.text_input("Hasło administratora", type="password")
-        if st.button("Zaloguj"):
+        pwd_input = st.text_input(t["pwd_label"], type="password")
+        if st.button(t["login_btn"]):
             if pwd_input == ADMIN_PASSWORD:
                 st.session_state["authenticated"] = True
-                st.success("Zalogowano!")
+                st.success(t["auth_success"])
                 st.rerun()
             else:
-                st.error("Błędne hasło!")
+                st.error(t["auth_error"])
     else:
-        st.success("Tryb Administratora aktywny")
-        if st.button("Wyloguj"):
+        st.success(t["admin_active"])
+        if st.button(t["logout_btn"]):
             st.session_state["authenticated"] = False
             st.rerun()
 
-# --- 1. KONFIGURACJA I INICJALIZACJA ---
-load_dotenv()
+# Klienci API
 client_gemini = genai.Client(
-    api_key=os.getenv("GOOGLE_API_KEY"),
-    http_options={'api_version': 'v1'} # Wymuszamy wersję stabilną zamiast v1beta
+    api_key=os.getenv("GOOGLE_API_KEY"), http_options={"api_version": "v1beta"}
 )
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-HF_TOKEN = os.getenv("HF_TOKEN")
 COLLECTION_NAME = "znajdywacz_zdjec_v2026_labs"
 UPLOAD_FOLDER = "uploaded_images"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 
 @st.cache_resource
 def get_qdrant_client():
     q_host = os.getenv("QDRANT_HOST")
     q_api_key = os.getenv("QDRANT_API_KEY")
     client = None
+    status = "local"
+    err = None
 
     if q_host and q_api_key:
         try:
             client = QdrantClient(url=q_host, api_key=q_api_key, timeout=10)
             client.get_collections()
-            st.sidebar.success("☁️ Połączono z Qdrant Cloud")
+            status = "cloud"
         except Exception as e:
-            st.sidebar.error(f"❌ Chmura nie odpowiada: {str(e)}")
+            err = str(e)
+            status = "error"
             client = QdrantClient(path="./qdrant_data")
     else:
-        st.sidebar.warning("🏠 Tryb lokalny (Brak danych w .env)")
         client = QdrantClient(path="./qdrant_data")
 
-    try:
-        if not client.collection_exists(COLLECTION_NAME):
-            client.create_collection(
-                collection_name=COLLECTION_NAME,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-            )
-    except Exception as e:
-        st.error(f"Błąd podczas tworzenia kolekcji: {e}")
-    return client
+    if not client.collection_exists(COLLECTION_NAME):
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+        )
+    return client, status, err
 
-qdrant_client = get_qdrant_client()
 
-# --- 2. FUNKCJE BACKENDOWE ---
+qdrant_client, conn_status, conn_err = get_qdrant_client()
+
+# Wyświetlanie statusu Qdrant w Sidebarze
+if conn_status == "cloud":
+    st.sidebar.success(t["qdrant_cloud"])
+elif conn_status == "error":
+    st.sidebar.error(f"{t['qdrant_error']} {conn_err}")
+else:
+    st.sidebar.warning(t["qdrant_local"])
+
+# --- 3. FUNKCJE BACKENDOWE ---
+
+
 def delete_only_metadata(point_id):
-    """Usuwa tylko wpis z Qdrant, pozostawiając plik na dysku nienaruszony."""
     try:
         qdrant_client.delete(
-            collection_name=COLLECTION_NAME,
-            points_selector=[point_id]
+            collection_name=COLLECTION_NAME, points_selector=[point_id]
         )
         return True
     except Exception as e:
-        st.error(f"Błąd podczas usuwania wpisu: {e}")
+        st.error(f"{t['error_generic']} {e}")
         return False
-    
+
+
 def get_indexed_paths():
     """Pobiera listę ścieżek do zdjęć, które już są w Qdrant."""
     try:
-        # Pobieramy punkty z bazy (limit ustawiony wysoko, by objąć bazę)
         results = qdrant_client.scroll(
             collection_name=COLLECTION_NAME,
             limit=10000,
             with_payload=True,
-            with_vectors=False
+            with_vectors=False,
         )
         points = results[0]
         return [p.payload.get("path") for p in points if p.payload.get("path")]
     except Exception:
         return []
 
+
+# PRZYWRÓCONA FUNKCJA - Potrzebna do sprawdzania, czy obrazy się nie dublują
 def get_file_hash(path):
-    """Oblicza skrót (hash) pliku, by sprawdzić czy są identyczne."""
     hasher = hashlib.md5()
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         buf = f.read()
         hasher.update(buf)
     return hasher.hexdigest()
 
+
+# PRZYWRÓCONA BEZPIECZNA FUNKCJA KASOWANIA (Oryginalna)
 def delete_point_from_db(point_id, image_path):
     OLD_IMAGES_FOLDER = "old_images"
     os.makedirs(OLD_IMAGES_FOLDER, exist_ok=True)
-
     try:
-        # 1. Usuwamy wpis z Qdrant
-        qdrant_client.delete(collection_name=COLLECTION_NAME, points_selector=[point_id])
-        
-        # 2. Logika bezpiecznego przenoszenia
+        qdrant_client.delete(
+            collection_name=COLLECTION_NAME, points_selector=[point_id]
+        )
         if image_path and os.path.exists(image_path):
             file_name = os.path.basename(image_path)
             name_part, ext_part = os.path.splitext(file_name)
             target_path = os.path.join(OLD_IMAGES_FOLDER, file_name)
 
-            # Jeśli plik o tej nazwie już istnieje w archiwum
             if os.path.exists(target_path):
-                # Porównaj zawartość
                 if get_file_hash(image_path) == get_file_hash(target_path):
-                    # Pliki są identyczne - możemy po prostu usunąć oryginał
                     os.remove(image_path)
                     return True
                 else:
-                    # Pliki są inne, ale mają tę samą nazwę - generujemy nową nazwę
                     counter = 1
                     while os.path.exists(target_path):
                         new_name = f"{name_part}_{counter}{ext_part}"
                         target_path = os.path.join(OLD_IMAGES_FOLDER, new_name)
                         counter += 1
-            
-            # Przenosimy (teraz target_path jest albo oryginalny, albo unikalny)
+
             shutil.move(image_path, target_path)
-            return True
         return True
-            
     except Exception as e:
-        st.error(f"Błąd podczas operacji: {e}")
+        st.error(f"{t['error_generic']} {e}")
         return False
-    
-def mass_index_folder():
-    """Skanuje folder i indeksuje brakujące zdjęcia."""
-    indexed_paths = get_indexed_paths()
-    all_files = [os.path.join(UPLOAD_FOLDER, f) for f in os.listdir(UPLOAD_FOLDER) 
-                 if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    
-    new_files = [f for f in all_files if f not in indexed_paths]
-    return new_files
 
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
-    
-def generate_image_description_free(image_path):
-    if not os.getenv("GOOGLE_API_KEY"):
-        return "Błąd: Brak GOOGLE_API_KEY"
 
+# POPRAWIONY MODEL NA gemini-3-flash-preview
+def generate_image_description_free(image_path, lang="PL"):
+    prompt = (
+        "Opisz krótko to zdjęcie po polsku, podaj kolory i obiekty."
+        if lang == "PL"
+        else "Briefly describe this photo in English, specify colors and objects."
+    )
     try:
         with open(image_path, "rb") as f:
             image_bytes = f.read()
-        
-        # POPRAWKA: Używamy aktualnie wspieranej, stabilnej nazwy modelu bez sufiksu '-latest'
         response = client_gemini.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3-flash-preview",
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-                "Opisz krótko to zdjęcie po polsku, podaj kolory i obiekty."
-            ]
-        )
-        
-        if response.text:
-           return f"{response.text}\n\n---STATS---\n📊 Model: Gemini 2.5 Flash"
-        return "Błąd: Brak tekstu w odpowiedzi."
-    except Exception as e:  # <--- TO TEGO BRAKOWAŁO!
-        return f"Błąd Gemini: {str(e)}"
-def generate_image_description(image_path, model_name):
-    base64_image = encode_image(image_path)
-    prompt = "Opisz to zdjęcie po polsku, podaj konkretne detale."
-    try:
-        messages = [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                prompt,
             ],
-        }]
-        response = openai_client.chat.completions.create(model=model_name, messages=messages, max_tokens=500)
-        content = response.choices[0].message.content
-        return content + f"\n\n---STATS---\n📊 Model: {model_name} | ⚡ Tokeny: {response.usage.total_tokens}"
+        )
+        return f"{response.text}\n\n---STATS---\n📊 Model: Gemini 3 Flash Preview"
     except Exception as e:
-        return f"Błąd modelu OpenAI: {str(e)}"
+        return f"Error Gemini: {str(e)}"
 
-def get_text_embedding(text):
-    clean_text = text.split("---STATS---")[0]
-    response = openai_client.embeddings.create(input=clean_text, model="text-embedding-3-small")
-    return response.data[0].embedding
+
+def generate_image_description(image_path, model_name, lang="PL"):
+    with open(image_path, "rb") as img_file:
+        base64_image = base64.b64encode(img_file.read()).decode("utf-8")
+    prompt = (
+        "Opisz krótko to zdjęcie po polsku, podaj kolory i obiekty."
+        if lang == "PL"
+        else "Briefly describe this photo in English, specify colors and objects."
+    )
+    try:
+        response = openai_client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            },
+                        },
+                    ],
+                }
+            ],
+            max_completion_tokens=500,
+        )
+        return (
+            response.choices[0].message.content
+            + f"\n\n---STATS---\n📊 Model: {model_name}"
+        )
+    except Exception as e:
+        return f"Error OpenAI: {str(e)}"
+
 
 def save_to_vector_db(image_path, description, model_used):
-    embedding = get_text_embedding(description)
+    clean_text = description.split("---STATS---")[0]
+    emb_res = openai_client.embeddings.create(
+        input=clean_text, model="text-embedding-3-small"
+    )
     point = PointStruct(
         id=str(uuid.uuid4()),
-        vector=embedding,
-        payload={"path": image_path, "description": description, "model": model_used, "timestamp": time.time()}
+        vector=emb_res.data[0].embedding,
+        payload={
+            "path": image_path,
+            "description": description,
+            "model": model_used,
+            "timestamp": time.time(),
+        },
     )
     qdrant_client.upsert(collection_name=COLLECTION_NAME, points=[point])
 
-def search_images(query_text, limit=4):
-    query_vector = get_text_embedding(query_text)
-    response = qdrant_client.query_points(collection_name=COLLECTION_NAME, query=query_vector, limit=limit)
-    return response.points
 
-# --- 3. INTERFEJS STREAMLIT ---
-st.set_page_config(page_title="AI Vision Lab 2026", layout="wide", page_icon="🔬")
+@st.cache_data(show_spinner=False)
+def translate_description(text, target_lang):
+    """Tłumaczy opis na wybrany język w locie, korzystając z pamięci podręcznej (cache)."""
+    if not text:
+        return ""
 
-# Używamy tylko JEDNEGO spójnego systemu kluczy w session_state
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
+    # Usuwamy na chwilę statystyki, żeby ich nie tłumaczyć
+    clean_text = text.split("---STATS---")[0].strip()
 
-st.title("🔬 AI Vision Lab: Multimodal Search")
+    prompt = f"Przetłumacz poniższy opis obrazu na język {'polski' if target_lang == 'PL' else 'angielski'}. Zwróć TYLKO przetłumaczony tekst, bez żadnych dodatkowych komentarzy:\n\n{clean_text}"
 
-# Zakładki są zawsze widoczne, ale ich treść zależy od autoryzacji
-tab1, tab2, tab3 = st.tabs(["📤 Laboratorium Analizy", "🔍 Eksplorator Wektorowy", "⚙️ Konsola Systemowa"])
+    try:
+        # Używamy najtańszego i najszybszego modelu do tłumaczeń
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=300,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"[Błąd tłumaczenia: {str(e)}] {clean_text}"
+
+
+# --- 4. INTERFEJS ---
+st.title(t["title"])
+tab1, tab2, tab3 = st.tabs([t["tab1"], t["tab2"], t["tab3"]])
 
 with tab1:
-    st.markdown("### 📷 Nowy Eksperyment Wizualny")
+    st.markdown(f"### {t['tab1']}")
     col_m1, col_m2 = st.columns([1, 2])
     with col_m1:
-        use_free_model = st.toggle("🆓 Używaj darmowego modelu (Google Gemini)", value=True)
-        selected_model = st.radio("Wybierz model OpenAI:", ["gpt-4o-mini", "gpt-4o"], disabled=use_free_model)
-    
+        use_free_model = st.toggle(t["toggle_free"], value=True)
+        selected_model = st.radio(
+            t["radio_model"],
+            ["gpt-4o-mini", "gpt-4o", "gpt-5.4"],
+            disabled=use_free_model,
+        )
     with col_m2:
-        uploaded_files = st.file_uploader("Wrzuć zdjęcia", accept_multiple_files=True)
-    
-    if uploaded_files and st.button("⚡ ROZPOCZNIJ PROCESOWANIE", width="stretch"):
-        progress_bar = st.progress(0)
-        for idx, uploaded_file in enumerate(uploaded_files):
-            path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
+        uploaded_files = st.file_uploader(t["uploader"], accept_multiple_files=True)
+
+    if uploaded_files and st.button(t["btn_process"], width="stretch"):
+        p_bar = st.progress(0)
+        for idx, file in enumerate(uploaded_files):
+            path = os.path.join(UPLOAD_FOLDER, file.name)
             with open(path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            
-            with st.status(f"Analizuję {uploaded_file.name}...", expanded=True) as status:
-                if use_free_model:
-                    desc = generate_image_description_free(path)
-                    model_tag = "Gemini 2.5 Flash"
-                else:
-                    desc = generate_image_description(path, selected_model)
-                    model_tag = selected_model
-                
-                if "Błąd" not in desc:
-                    save_to_vector_db(path, desc, model_tag)
+                f.write(file.getbuffer())
+
+            with st.status(
+                t["status_analyzing"].format(file.name), expanded=True
+            ) as status:
+                desc = (
+                    generate_image_description_free(path, lang=lang_code)
+                    if use_free_model
+                    else generate_image_description(
+                        path, selected_model, lang=lang_code
+                    )
+                )
+                if "Error" not in desc:
+                    # Poprawiona nazwa używanego modelu przy zapisie do wektorów (Dla Gemini 2.5 Flash)
+                    save_to_vector_db(
+                        path,
+                        desc,
+                        "Gemini 3 Flash Preview" if use_free_model else selected_model,
+                    )
                     st.image(path, width=200)
                     st.write(desc)
-                    status.update(label=f"Zakończono: {uploaded_file.name}", state="complete")
+                    status.update(
+                        label=t["status_done"].format(file.name), state="complete"
+                    )
                 else:
                     st.error(desc)
-                    status.update(label="Przerwano procesowanie", state="error")
-            
-            progress_bar.progress((idx + 1) / len(uploaded_files))
-        st.balloons()
+                    status.update(label=t["status_error"], state="error")
+            p_bar.progress((idx + 1) / len(uploaded_files))
 
 with tab2:
-    st.markdown("### 🔍 Wyszukiwanie Semantyczne")
-    query = st.text_input("Wpisz czego szukasz:")
-    if query:
-        results = search_images(query)
-        if results:
-            grid = st.columns(2)
-            for idx, hit in enumerate(results):
-                with grid[idx % 2]:
-                    with st.container(border=True):
-                        img_path = hit.payload.get("path")
-                        if img_path and os.path.exists(img_path):
-                            st.image(img_path, width="stretch")
-                        else:
-                            st.warning("⚠️ Plik zdjęcia został przeniesiony lub usunięty.")
-                            if st.session_state["authenticated"] and st.button("🧹 Usuń martwy wpis", key=f"clean_{hit.id}"):
-                                delete_point_from_db(hit.id, img_path)
-                                st.rerun()
+    st.markdown(f"### {t['tab2']}")
 
-                        full_desc = hit.payload.get('description', '')
-                        st.markdown(f"**Opis:** {full_desc.split('---STATS---')[0]}")
-                        
-                        with st.expander("🔬 Dane techniczne"):
-                            ts = hit.payload.get('timestamp')
-                            readable_date = datetime.fromtimestamp(ts).strftime('%d.%m.%Y %H:%M') if ts else "Brak daty"
-                            st.caption(f"🗓️ Data: {readable_date} | 🤖 Model: {hit.payload.get('model')} | 🎯 Score: {hit.score:.4f}")
-                            
-                            if st.session_state["authenticated"]:
-                                col_del1, col_del2 = st.columns(2)
-                                with col_del1:
-                                    if st.button("🗑️ Usuń tylko opis", key=f"only_meta_{hit.id}", width="stretch"):
-                                        if delete_only_metadata(hit.id):
-                                            st.rerun()
-                                with col_del2:
-                                    if st.button("📦 Archiwizuj foto i usuń wpis", key=f"arch_{hit.id}", width="stretch"):
-                                        if delete_point_from_db(hit.id, img_path):
-                                            st.rerun()
-                            else:
-                                st.info("Zaloguj się w sidebarze, aby zarządzać tym wpisem.")
+    # Rozdzielamy pole wyszukiwania i przełącznik tłumaczenia na dwie kolumny
+    col_s1, col_s2 = st.columns([3, 1])
+    with col_s1:
+        query = st.text_input(t["search_label"])
+    with col_s2:
+        st.write("")  # Pusty wiersz dla wyrównania w pionie
+        st.write("")
+        auto_translate = st.toggle(t["auto_translate"], value=False)
+
+    if query:
+        emb_query = (
+            openai_client.embeddings.create(input=query, model="text-embedding-3-small")
+            .data[0]
+            .embedding
+        )
+        hits = qdrant_client.query_points(
+            collection_name=COLLECTION_NAME, query=emb_query, limit=4
+        ).points
+
+        grid = st.columns(2)
+        for i, hit in enumerate(hits):
+            with grid[i % 2]:
+                with st.container(border=True):
+                    path = hit.payload.get("path")
+                    if path and os.path.exists(path):
+                        st.image(path, width="stretch")
+                    else:
+                        st.warning(t["dead_link"])
+                        if st.session_state["authenticated"] and st.button(
+                            t["btn_clean_dead"], key=f"c_{hit.id}"
+                        ):
+                            delete_only_metadata(hit.id)
+                            st.rerun()
+
+                    # --- LOGIKA TŁUMACZENIA ---
+                    original_desc = hit.payload.get("description", "").split(
+                        "---STATS---"
+                    )[0]
+
+                    if auto_translate:
+                        # Wywołujemy naszą funkcję (dzięki @st.cache_data nie spowolni to aplikacji)
+                        display_desc = translate_description(original_desc, lang_code)
+                    else:
+                        display_desc = original_desc
+
+                    st.markdown(f"{t['desc_label']} {display_desc}")
+                    # --------------------------
+
+                    with st.expander(t["tech_data"]):
+                        ts = hit.payload.get("timestamp")
+                        date = (
+                            datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M")
+                            if ts
+                            else "---"
+                        )
+                        st.caption(
+                            f"{t['date_label']}: {date} | 🤖: {hit.payload.get('model')} | 🎯: {hit.score:.4f}"
+                        )
+                        if st.session_state["authenticated"]:
+                            c1, c2 = st.columns(2)
+                            if c1.button(t["btn_del_meta"], key=f"m_{hit.id}"):
+                                if delete_only_metadata(hit.id):
+                                    st.rerun()
+                            if c2.button(t["btn_archive"], key=f"a_{hit.id}"):
+                                if delete_point_from_db(hit.id, path):
+                                    st.rerun()
+                        else:
+                            st.info(t["login_info"])
 
 with tab3:
     if st.session_state["authenticated"]:
-        st.subheader("📦 Masowe Przetwarzanie")
-        st.info("Skanuje folder `uploaded_images` pod kątem nowych plików.")
-        
-        if st.button("🔎 Skanuj i Indeksuj Nowe Zdjęcia", width="stretch"):
-            files_to_process = mass_index_folder()
-            if not files_to_process:
-                st.success("Brak nowych zdjęć do dodania.")
+        st.subheader(t["mass_header"])
+        st.info(t["mass_info"])
+        if st.button(t["scan_btn"], width="stretch"):
+            indexed = get_indexed_paths()
+            new = [
+                os.path.join(UPLOAD_FOLDER, f)
+                for f in os.listdir(UPLOAD_FOLDER)
+                if f.lower().endswith((".png", ".jpg", ".jpeg"))
+                and os.path.join(UPLOAD_FOLDER, f) not in indexed
+            ]
+            if not new:
+                st.success(t["no_new"])
             else:
-                p_bar = st.progress(0)
-                for idx, f_path in enumerate(files_to_process):
-                    desc = generate_image_description_free(f_path)
-                    if "Błąd" not in desc:
-                        save_to_vector_db(f_path, desc, "Gemini 2.5 Flash")
-                    p_bar.progress((idx + 1) / len(files_to_process))
+                pb = st.progress(0)
+                for i, f_path in enumerate(new):
+                    desc = generate_image_description_free(f_path, lang=lang_code)
+                    if "Error" not in desc:
+                        # Poprawiona nazwa zapisanego modelu z "Gemini 2.0" na "Gemini 2.5 Flash"
+                        save_to_vector_db(f_path, desc, "Gemini 3 Flash Preview")
+                    pb.progress((i + 1) / len(new))
                 st.rerun()
 
         st.divider()
-        st.subheader("⚠️ Strefa Niebezpieczna")
-        confirm_reset = st.checkbox("Potwierdzam chęć usunięcia danych")
+        st.subheader(t["danger_zone"])
+        confirm = st.checkbox(t["confirm_check"])
         c1, c2 = st.columns(2)
-        with c1:
-            if st.button("🧹 Czyść folder zdjęć", disabled=not confirm_reset, width="stretch"):
-                for f in os.listdir(UPLOAD_FOLDER):
-                    os.remove(os.path.join(UPLOAD_FOLDER, f))
-                st.success("Wyczyszczono!")
-        with c2:
-            if st.button("🔥 RESETUJ QDRANT", disabled=not confirm_reset, width="stretch"):
-                qdrant_client.delete_collection(COLLECTION_NAME)
-                st.rerun()
+        if c1.button(t["btn_clean_folder"], disabled=not confirm):
+            for f in os.listdir(UPLOAD_FOLDER):
+                os.remove(os.path.join(UPLOAD_FOLDER, f))
+            st.success(t["success_clean"])
+        if c2.button(t["btn_reset_qdrant"], disabled=not confirm):
+            qdrant_client.delete_collection(COLLECTION_NAME)
+            st.rerun()
     else:
-        st.header("⚙️ Konsola Systemowa")
-        st.warning("Ta sekcja jest dostępna tylko dla administratora. Zaloguj się w panelu bocznym.")
+        st.warning(t["login_info"])
