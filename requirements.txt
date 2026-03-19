@@ -2,5 +2,6 @@ streamlit
 openai>=1.60.0
 python-dotenv
 qdrant-client
+google-genai
 Pillow
-requsts
+requests

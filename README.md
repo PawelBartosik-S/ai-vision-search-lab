@@ -1,31 +1,110 @@
+# 👁️ Sokole Oko AI / AI Vision Lab 2026
 
-# 📸 Znajdywacz Zdjęć 2026 (AI Image Search Lab)
+![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
+![Streamlit](https://img.shields.io/badge/Streamlit-2.1+-red.svg)
+![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant_Cloud-orange.svg)
+![AI](https://img.shields.io/badge/Models-Gemini_3_|_GPT--5.3-green.svg)
 
-### Projekt do przedostatniego modułu kursu Data Science
+## 🇵🇱 O Projekcie
+Inteligentny system zarządzania archiwum zdjęć, wykorzystujący najnowocześniejsze modele multimodalne (LMM) do automatycznego indeksowania i semantycznego przeszukiwania obrazów. Projekt stworzony w ramach zaawansowanego modułu kursu Data Science.
 
-System inteligentnego zarządzania archiwum zdjęć, który wykorzystuje multimodalne modele Large Language Models (LLM) do automatycznego opisywania obrazów oraz bazę wektorową do błyskawicznego wyszukiwania semantycznego.
+### 🔥 Kluczowe funkcjonalności:
+- **Wielojęzyczność (PL/EN):** Pełne wsparcie interfejsu i generowania opisów w dwóch językach.
+- **Multimodalność 2026:** Integracja z **Google Gemini 3 Flash** (darmowy tier) oraz **OpenAI GPT-5.3 Pro**.
+- **Wyszukiwanie Wektorowe:** Błyskawiczna analiza semantyczna dzięki **Qdrant Cloud**.
+- **Zarządzanie Archiwum:** Funkcje masowego skanowania folderów, archiwizacji zdjęć i czyszczenia metadanych.
+- **Optymalizacja:** Pełna obsługa `reasoning_tokens` i monitorowanie kosztów API.
 
-## 🚀 Główne funkcjonalności
-- **Multimodalna Analiza:** Wykorzystanie modeli `gpt-4o` oraz `gpt-5` do generowania szczegółowych opisów (detekcja obiektów, tekstów i kontekstu).
-- **Wyszukiwanie Semantyczne:** Zastosowanie bazy wektorowej **Qdrant** oraz modelu `text-embedding-3-small` do wyszukiwania po sensie zapytania (a nie tylko słowach kluczowych).
-- **Monitorowanie Tokenów:** Diagnostyka procesu wnioskowania dzięki podglądowi `reasoning_tokens` (specyficznych dla modeli GPT-5).
-- **Interfejs Streamlit:** Intuicyjny panel podzielony na procesowanie danych, wyszukiwarkę oraz zarządzanie bazą.
+---
 
-## 🛠️ Stos technologiczny
-- **Język:** Python 3.10+
-- **AI/ML:** OpenAI API (Vision, Embeddings)
-- **Baza danych:** Qdrant (Vector Database)
-- **Frontend:** Streamlit
-- **Zarządzanie projektem:** Trello (Metodyka Agile/Scrum)
+## 🇬🇧 About The Project
+An intelligent image archive management system that leverages cutting-edge multimodal models (LMM) for automatic indexing and semantic image retrieval. Developed as part of an advanced Data Science curriculum.
 
-## 📋 Struktura projektu
-- `app.py` - główna aplikacja Streamlit
-- `uploaded_images/` - lokalne archiwum przetworzonych zdjęć
-- `qdrant_data/` - lokalna persystencja bazy wektorowej
-- `.env` - klucze API (plik pominięty w repozytorium)
+### 🔥 Key Features:
+- **Bilingual Support (PL/EN):** Full UI and AI description support in both Polish and English.
+- **2026 Multimodality:** Native integration with **Google Gemini 3 Flash** and **OpenAI GPT-5.3 Pro**.
+- **Vector Search:** Instant semantic analysis powered by **Qdrant Cloud**.
+- **Archive Management:** Bulk folder scanning, image archiving, and metadata management tools.
+- **Optimization:** Full support for `reasoning_tokens` and real-time API cost monitoring.
 
-## ⚙️ Instalacja i uruchomienie
-1. Sklonuj repozytorium:
+---
+
+## 🛠️ Stos technologiczny / Tech Stack
+- **AI/ML:** Google GenAI (Gemini 3), OpenAI API (GPT-5.3, text-embedding-4-large)
+- **Vector DB:** Qdrant (Cloud Hybrid Search)
+- **Frontend:** Streamlit 2.x (Modern UI with width-stretch support)
+- **DevOps:** Python 3.11+, Ruff (Linting), Git
+
+## ⚙️ Instalacja / Installation
+
+1. **Sklonuj repozytorium / Clone the repo:**
    ```bash
    git clone [https://github.com/TWOJA-NAZWA/Znajdywacz-zdjec.git](https://github.com/TWOJA-NAZWA/Znajdywacz-zdjec.git)
+   cd Znajdywacz-zdjec
+   # 👁️ Sokole Oko AI / AI Vision Lab 2026
 
+![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
+![Streamlit](https://img.shields.io/badge/Streamlit-2.1+-red.svg)
+![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant_Cloud-orange.svg)
+![AI](https://img.shields.io/badge/Models-Gemini_3_|_GPT--5.3-green.svg)
+
+## 🇵🇱 O Projekcie
+Inteligentny system zarządzania archiwum zdjęć, wykorzystujący najnowocześniejsze modele multimodalne (LMM) do automatycznego indeksowania i semantycznego przeszukiwania obrazów. Projekt stworzony w ramach zaawansowanego modułu kursu Data Science.
+
+### 🔥 Kluczowe funkcjonalności:
+- **Wielojęzyczność (PL/EN):** Pełne wsparcie interfejsu i generowania opisów w dwóch językach.
+- **Multimodalność 2026:** Integracja z **Google Gemini 3 Flash** (darmowy tier) oraz **OpenAI GPT-5.3 Pro**.
+- **Wyszukiwanie Wektorowe:** Błyskawiczna analiza semantyczna dzięki **Qdrant Cloud**.
+- **Zarządzanie Archiwum:** Funkcje masowego skanowania folderów, archiwizacji zdjęć i czyszczenia metadanych.
+- **Optymalizacja:** Pełna obsługa `reasoning_tokens` i monitorowanie kosztów API.
+
+---
+
+## 🇬🇧 About The Project
+An intelligent image archive management system that leverages cutting-edge multimodal models (LMM) for automatic indexing and semantic image retrieval. Developed as part of an advanced Data Science curriculum.
+
+### 🔥 Key Features:
+- **Bilingual Support (PL/EN):** Full UI and AI description support in both Polish and English.
+- **2026 Multimodality:** Native integration with **Google Gemini 3 Flash** and **OpenAI GPT-5.3 Pro**.
+- **Vector Search:** Instant semantic analysis powered by **Qdrant Cloud**.
+- **Archive Management:** Bulk folder scanning, image archiving, and metadata management tools.
+- **Optimization:** Full support for `reasoning_tokens` and real-time API cost monitoring.
+
+---
+
+## 🛠️ Stos technologiczny / Tech Stack
+- **AI/ML:** Google GenAI (Gemini 3), OpenAI API (GPT-5.3, text-embedding-4-large)
+- **Vector DB:** Qdrant (Cloud Hybrid Search)
+- **Frontend:** Streamlit 2.x (Modern UI with width-stretch support)
+- **DevOps:** Python 3.11+, Ruff (Linting), Git
+
+## ⚙️ Instalacja / Installation
+
+1. **Sklonuj repozytorium / Clone the repo:**
+   ```bash
+   git clone [https://github.com/TWOJA-NAZWA/Znajdywacz-zdjec.git](https://github.com/TWOJA-NAZWA/Znajdywacz-zdjec.git)
+   cd Znajdywacz-zdjec
+
+2. Środowisko i zależności / Environment & Dependencies
+Zalecane użycie środowiska wirtualnego / Virtual environment recommended:
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+3. Konfiguracja zmiennych / Environment Variables
+Utwórz plik .env w głównym katalogu / Create a .env file in the root directory:
+
+GOOGLE_API_KEY=your_gemini_3_key
+OPENAI_API_KEY=your_gpt_key
+QDRANT_HOST=your_qdrant_cloud_url
+QDRANT_API_KEY=your_qdrant_api_key
+
+Ważne: Plik .env jest ignorowany przez git dla Twojego bezpieczeństwa.
+Important: The .env file is ignored by git for your security.
+
+4. Uruchomienie aplikacji / Run the app
+streamlit run app.py
