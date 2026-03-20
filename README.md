@@ -106,5 +106,21 @@ QDRANT_API_KEY=your_qdrant_api_key
 Ważne: Plik .env jest ignorowany przez git dla Twojego bezpieczeństwa.
 Important: The .env file is ignored by git for your security.
 
+Następnie utwórz folder .streamlit i plik secrets.toml dla hasła admina / Create .streamlit/secrets.toml for admin password:
+# .streamlit/secrets.toml for admin password:
+ADMIN_PASSWORD = "twoje_tajne_haslo"
+ADMIN_PASSWORD = "your_secret_password"
+
+Wskazówka: Oba te pliki powinny być dodane do .gitignore, aby nie wyciekły do sieci.
+
+Tip: Both of these files should be added to .gitignore to prevent them from being leaked online.
+
 4. Uruchomienie aplikacji / Run the app
+
 streamlit run app.py
+
+⚖️ Notka prawna / Legal Notice
+
+Logotypy Google Gemini oraz OpenAI wykorzystane w grafice podglądu (Social Preview) są znakami towarowymi należącymi do ich odpowiednich właścicieli. Zostały użyte wyłącznie w celach informacyjnych, aby wskazać na integrację technologiczną projektu z tymi modelami AI. Projekt ma charakter edukacyjny i niekomercyjny.
+
+The Google Gemini and OpenAI logos used in the Social Preview image are trademarks of their respective owners. They are used for informational purposes only to indicate the project's technological integration with these AI models. The project is educational and non-commercial.
